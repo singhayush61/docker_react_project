@@ -1,0 +1,24 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 1 & 2: Build the image using Dockerfile.dev
+      - name: Build Docker Dev Image
+        run: docker build -t ayush/frontend-dev -f Dockerfile.dev .
+
+      # 3: How to run your test suite
+      # This runs the tests and exits once they finish (CI=true)
+      - name: Run Test Suite
+        run: docker run -e CI=true ayush/frontend-dev npm test
