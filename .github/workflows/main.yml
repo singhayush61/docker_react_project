@@ -22,3 +22,36 @@ jobs:
       # This runs the tests and exits once they finish (CI=true)
       - name: Run Test Suite
         run: docker run -e CI=true ayush/frontend-dev npm test
+  
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    # Only deploy if the build/test passed and we are on the main branch
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Log in to AWS using Secrets (Go to GitHub Settings > Secrets to add these)
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # Example: Deploying to AWS Elastic Beanstalk
+      - name: Create Deployment Package
+        run: zip -r deploy.zip . -x "*.git*" "node_modules/*"
+
+      - name: Deploy to AWS EB
+        uses: einaregilsson/beanstalk-deploy@v21
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: frontend
+          environment_name: frontend-env
+          version_label: ${{ github.sha }}
+          region: us-east-1
+          deployment_package: deploy.zip
